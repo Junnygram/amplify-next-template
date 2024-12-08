@@ -71,20 +71,24 @@ This library is licensed under the MIT-0 License. See the LICENSE file.
 
 
 
-Storage Browser for S3 is an AWS Amplify UI React component that allows external users to access your data stored in S3. This video walks through how to set up a new Next.js App Router Amplify project (using the Quickstart guide), add authentication, storage, and then add the Storage Browser UI component.
-Install the storage-specific package from the Amplify UI library
 
-npm i @aws-amplify/ui-react-storage aws-amplify
 
-Authenticator code, in app\page.tsx
 
-At the top of the file, add:
+#### **1. Setting up a new Amplify Project**
+- **Image Reference:** _Screenshot showing the Amplify initialization (CLI or UI setup)._
+- **Description:** Use the AWS Amplify CLI to initialize the project, ensuring you select the appropriate services for authentication, storage, and GraphQL API.
 
-import { Authenticator } from '@aws-amplify/ui-react';
+#### **2. Installing Amplify and Storage UI Libraries**
+- **Image Reference:** _Screenshot of the terminal showing the command `npm i @aws-amplify/ui-react-storage aws-amplify`._
+- **Description:** This command installs the Amplify library and the storage-specific package required for implementing S3 access and UI components.
 
-Update the return statement
+#### **3. Adding Authentication to the Application**
+- **Image Reference:** _Screenshot of code in `app/page.tsx` where `Authenticator` is imported and integrated._
+- **Code Documentation:**
+  ```tsx
+  import { Authenticator } from '@aws-amplify/ui-react';
 
- return (
+  return (
     <Authenticator>
       {({ signOut, user }) => (
         <main>
@@ -94,87 +98,87 @@ Update the return statement
       )}
     </Authenticator>
   );
+  ```
+- **Explanation:** This code snippet enables authentication, allowing users to log in, view their username, and sign out.
 
-Instantiate storage and access rules, in amplify\storage\resource.ts
+#### **4. Defining S3 Storage Rules**
+- **Image Reference:** _Screenshot of `amplify/storage/resource.ts` defining access rules._
+- **Code Documentation:**
+  ```ts
+  import { defineStorage } from '@aws-amplify/backend';
 
-import { defineStorage } from '@aws-amplify/backend';
+  export const storage = defineStorage({
+    name: 'myS3Bucket',
+    access: (allow) => ({
+      'public/*': [
+        allow.guest.to(['read']),
+        allow.authenticated.to(['read', 'write', 'delete']),
+      ],
+      'protected/{entity_id}/*': [
+        allow.authenticated.to(['read']),
+        allow.entity('identity').to(['read', 'write', 'delete']),
+      ],
+      'private/{entity_id}/*': [
+        allow.entity('identity').to(['read', 'write', 'delete']),
+      ],
+    }),
+  });
+  ```
+- **Explanation:** Access rules define permissions for different users (guest, authenticated, and private entities).
 
-export const storage = defineStorage({
-  name: 'myS3Bucket',
-  access: (allow) => ({
-    'public/*': [
-      allow.guest.to(['read']),
-      allow.authenticated.to(['read', 'write', 'delete']),
-    ],
-    'protected/{entity_id}/*': [
-      allow.authenticated.to(['read']),
-      allow.entity('identity').to(['read', 'write', 'delete'])
-    ],
-    'private/{entity_id}/*': [
-      allow.entity('identity').to(['read', 'write', 'delete'])
-    ]
-  })
-});
+#### **5. Hooking Up Backend to Storage**
+- **Image Reference:** _Screenshot of `amplify/backend.ts` integrating storage with backend services._
+- **Code Documentation:**
+  ```ts
+  import { storage } from './storage/resource';
 
-Hook up backend to storage, in amplify\backend.ts:
+  defineBackend({
+    auth,
+    data,
+    storage,
+  });
+  ```
+- **Explanation:** This ensures that storage functionality is part of the backend configuration.
 
-At the top of the file, add:
+#### **6. Implementing the `StorageBrowser` Component**
+- **Image Reference:** _Screenshot of `StorageBrowser.tsx` showcasing component creation._
+- **Code Documentation:**
+  ```tsx
+  import React from 'react';
+  import { createAmplifyAuthAdapter, createStorageBrowser } from '@aws-amplify/ui-react-storage/browser';
+  import '@aws-amplify/ui-react-storage/styles.css';
+  import { Amplify } from 'aws-amplify';
+  import config from '../amplify_outputs.json';
 
-import { storage } from './storage/resource';
+  Amplify.configure(config);
 
-In the defineBackend function, add storage
+  export const { StorageBrowser } = createStorageBrowser({
+    config: createAmplifyAuthAdapter(),
+  });
+  ```
+- **Explanation:** This creates a UI component for browsing files in the S3 bucket.
 
-defineBackend({
-  auth,
-  data,
-  storage
-});
-
-Component for StorageBrowser
-
-At the root of the app (at the same level as app and public folders), create a folder called components.
-
-Inside the folder, create a file called StorageBrowser.tsx.
-
-Add the following code to StorageBrowser.tsx:
-
-import React from 'react';
-import { createAmplifyAuthAdapter, createStorageBrowser } from '@aws-amplify/ui-react-storage/browser';
-import '@aws-amplify/ui-react-storage/styles.css';
-import { Amplify } from 'aws-amplify';
-import config from '../amplify_outputs.json';
-
-// Configure Amplify using the imported configuration
-Amplify.configure(config);
-
-// Create the StorageBrowser component with Amplify authentication
-export const { StorageBrowser } = createStorageBrowser({
-  config: createAmplifyAuthAdapter(),
-});
-
-Add StorageBrowser to UI in app\page.tsx
-
-At the top of the file, add:
-
-import { StorageBrowser } from '../components/StorageBrowser';
-
-Update the return statement to:
+#### **7. Integrating the `StorageBrowser` Component in UI**
+- **Image Reference:** _Screenshot of the updated `app/page.tsx` showing the `StorageBrowser` component integration._
+- **Code Documentation:**
+  ```tsx
+  import { StorageBrowser } from '../components/StorageBrowser';
 
   return (
     <Authenticator>
       {({ signOut, user }) => (
         <main>
-            <h1>Hello {user?.username}</h1>
-            <button onClick={signOut}>Sign out</button>
+          <h1>Hello {user?.username}</h1>
+          <button onClick={signOut}>Sign out</button>
 
-          {/* StorageBrowser Component */}
           <h2>Your Files</h2>
           <StorageBrowser />
-
         </main>
       )}
     </Authenticator>
   );
-}
+  ```
+- **Explanation:** Adds the `StorageBrowser` component to display files to the authenticated user.
+
 
 
